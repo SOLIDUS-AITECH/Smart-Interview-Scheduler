@@ -1,0 +1,108 @@
+version: '1.0'
+blocks:
+  ac0563b3-3d5e-493f-a9eb-bb451d91043c:
+    type: starter
+    name: Start
+    inputs:
+      startWorkflow: manual
+    connections:
+      success: b25b8ede-382e-4a58-8d29-94685952837e
+  068f8ba7-3b91-4e50-b9bd-22f03a02da65:
+    type: agent
+    name: Agent 2
+    inputs:
+      systemPrompt: |-
+        You are a corporate HR manager.  
+        Using the following diversity metrics: <diversitymetrics.result>, generate a professional written section for a company   Google Docs document that clearly explains these diversity metrics.  
+
+        TASK:  
+        1. Write in a formal, HR-friendly tone.  
+        2. Summarize key diversity insights (gender, age, ethnicity, and other available categories).  
+        3. Present both counts and percentages where available.  
+        4. Highlight notable patterns or areas of balance/imbalance.  
+        5. Keep the text concise, structured, and easy to read for stakeholders.  
+        6. Do not include raw data objects or code — only polished narrative text.  
+
+        OUTPUT:  
+        A clear and professional HR document section that communicates the diversity metrics.
+      model: gpt-4o
+    connections:
+      success: 9dc367a2-a1b0-40b6-930a-f281c78b45f1
+  b40bd2cf-bf6e-4764-873b-e39107030079:
+    type: agent
+    name: Agent 1
+    inputs:
+      systemPrompt: |-
+        You are a data analyst.  
+        Given the dataset: <supabase1.results>, calculate ALL possible diversity metrics with accuracy to the input. Do not make up ANY  values, use only the values from the data
+
+        TASK:  
+        1. Return ONLY an object. NO JSON formatting. No explanations or reasoning.  
+        2. Include metrics such as (but not limited to):  
+           - Gender diversity (counts, percentages)  
+           - Age diversity (counts, percentages)  
+           - Ethnic/racial diversity (counts, percentages)  
+           - Any other available categories in the dataset  
+        3. For each category, include:  
+           - Counts  
+           - Percentages of each subgroup  
+
+        OUTPUT FORMAT EXAMPLE:
+        {
+          "genderCount": {
+            "male": "value",
+            "female": "value"
+          },
+          "genderDiversityPercentages": {
+            "male": "value",
+            "female": "value"
+          },
+          "ageCount": {
+            "18-25": "value",
+            "26-35": "value"
+          },
+          "ageDiversityPercentages": {
+            "18-25": "value",
+            "26-35": "value"
+          },
+        etc.
+        }
+      model: gpt-4o
+    connections:
+      success: 55825177-58b8-4851-a8f8-2c6d0bf7481c
+  55825177-58b8-4851-a8f8-2c6d0bf7481c:
+    type: function
+    name: diversityMetrics
+    inputs:
+      code: return JSON.parse(<agent1.content>);
+    connections:
+      success: 068f8ba7-3b91-4e50-b9bd-22f03a02da65
+  c6fa5afb-71b7-4a24-912f-8a4f37df8357:
+    type: gmail
+    name: Gmail 1
+    inputs:
+      operation: send_gmail
+      subject: Diversity Metrics by Gen6
+      body: |-
+        Hey!
+
+        View your company's diversity metrics here. <googledocs1.metadata.url>
+
+        Thank you for using Gen6!
+  9dc367a2-a1b0-40b6-930a-f281c78b45f1:
+    type: google_docs
+    name: Google Docs 1
+    inputs:
+      operation: create
+      title: Diversity Metrics
+      content: <agent2.content>
+    connections:
+      success: c6fa5afb-71b7-4a24-912f-8a4f37df8357
+  b25b8ede-382e-4a58-8d29-94685952837e:
+    type: supabase
+    name: Supabase 1
+    inputs:
+      operation: query
+      table: emp
+    connections:
+      success: b40bd2cf-bf6e-4764-873b-e39107030079
